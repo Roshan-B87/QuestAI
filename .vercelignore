@@ -1,0 +1,18 @@
+# Ignore backend directory
+backend/
+backend/
+
+# Ignore root node_modules if any
+node_modules/
+
+# Ignore other unnecessary files
+.git/
+.env
+.env.*
+.DS_Store
+*.log
+dist/
+.cache/
+
+# Keep only frontend
+!frontend/

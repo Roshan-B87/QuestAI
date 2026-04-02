@@ -1,0 +1,11 @@
+# Ignore backend files when building frontend
+../backend/
+
+# Ignore git
+../.git/
+
+# Ignore root env files
+../.env*
+
+# Ignore other root files
+../node_modules/
