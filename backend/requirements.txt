@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+python-multipart
+langdetect
+sentence-transformers
+faiss-cpu
+PyPDF2
+python-dotenv
+httpx
+pydantic
+groq
+deep-translator
+sse-starlette
+python-docx

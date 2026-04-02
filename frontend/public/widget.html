@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuestAI Widget</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #10b981;
+      --primary-dark: #059669;
+      --bg-dark: #09090b;
+      --bg-card: #18181b;
+      --text: #f4f4f5;
+      --text-muted: #71717a;
+      --border: rgba(255,255,255,0.1);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* Floating Button */
+    #campusbot-toggle {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), #14b8a6);
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+      z-index: 9999;
+    }
+
+    #campusbot-toggle:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 25px rgba(16, 185, 129, 0.5);
+    }
+
+    #campusbot-toggle svg {
+      width: 28px;
+      height: 28px;
+      fill: white;
+    }
+
+    /* Chat Window */
+    #campusbot-window {
+      position: fixed;
+      bottom: 100px;
+      right: 24px;
+      width: 380px;
+      height: 550px;
+      background: var(--bg-dark);
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 9998;
+      border: 1px solid var(--border);
+    }
+
+    #campusbot-window.open { display: flex; }
+
+    /* Header */
+    .cb-header {
+      padding: 16px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .cb-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary), #14b8a6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cb-avatar svg { width: 22px; height: 22px; fill: white; }
+
+    .cb-info h3 {
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .cb-info p {
+      color: var(--primary);
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .cb-info p::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: var(--primary);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--primary);
+    }
+
+    .cb-close {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .cb-close:hover { color: var(--text); }
+
+    /* Messages */
+    .cb-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .cb-message {
+      max-width: 85%;
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .cb-message.bot {
+      background: var(--bg-card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+
+    .cb-message.user {
+      background: #f4f4f5;
+      color: #09090b;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+
+    .cb-typing {
+      display: flex;
+      gap: 4px;
+      padding: 12px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      border-bottom-left-radius: 4px;
+      align-self: flex-start;
+    }
+
+    .cb-typing span {
+      width: 6px;
+      height: 6px;
+      background: var(--primary);
+      border-radius: 50%;
+      animation: typing 1s infinite;
+    }
+
+    .cb-typing span:nth-child(2) { animation-delay: 0.2s; }
+    .cb-typing span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typing {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    /* Quick Replies */
+    .cb-quick-replies {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0 16px 12px;
+    }
+
+    .cb-quick-btn {
+      padding: 8px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      color: var(--text);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .cb-quick-btn:hover {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: var(--primary);
+    }
+
+    /* Input */
+    .cb-input-area {
+      padding: 16px;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+    }
+
+    .cb-input-wrapper {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .cb-input {
+      flex: 1;
+      padding: 12px 16px;
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+    }
+
+    .cb-input:focus {
+      border-color: var(--primary);
+    }
+
+    .cb-input::placeholder { color: var(--text-muted); }
+
+    .cb-send {
+      width: 44px;
+      height: 44px;
+      background: var(--text);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .cb-send:hover { background: white; }
+    .cb-send:disabled { opacity: 0.5; cursor: not-allowed; }
+    .cb-send svg { width: 18px; height: 18px; }
+
+    /* Language Selector */
+    .cb-lang {
+      padding: 4px 10px;
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    /* Mobile */
+    @media (max-width: 420px) {
+      #campusbot-window {
+        width: calc(100vw - 16px);
+        height: calc(100vh - 120px);
+        right: 8px;
+        bottom: 90px;
+        border-radius: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Toggle Button -->
+<button id="campusbot-toggle" aria-label="Open QuestAI">
+  <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.36 5.07L2 22l4.93-1.36C8.42 21.5 10.15 22 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-2h2v2zm2.07-7.75-.9.92C11.45 10.9 11 11.5 11 13h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H6c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
+</button>
+
+<!-- Chat Window -->
+<div id="campusbot-window">
+  <div class="cb-header">
+    <div class="cb-avatar">
+      <svg viewBox="0 0 24 24"><path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/></svg>
+    </div>
+    <div class="cb-info">
+      <h3>QuestAI</h3>
+      <p>Online - Ready to help</p>
+    </div>
+    <select class="cb-lang" id="cb-language">
+      <option value="en">EN</option>
+      <option value="hi">HI</option>
+    </select>
+    <button class="cb-close" onclick="toggleChat()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>
+  </div>
+
+  <div class="cb-messages" id="cb-messages">
+    <div class="cb-message bot">Hello! I'm your QuestAI assistant. How can I help you today? You can ask me about fees, scholarships, exams, library timings, and more!</div>
+  </div>
+
+  <div class="cb-quick-replies" id="cb-quick">
+    <button class="cb-quick-btn" onclick="sendQuick('Fee payment deadline')">Fee Deadline</button>
+    <button class="cb-quick-btn" onclick="sendQuick('Scholarship eligibility')">Scholarships</button>
+    <button class="cb-quick-btn" onclick="sendQuick('Library timings')">Library</button>
+  </div>
+
+  <div class="cb-input-area">
+    <div class="cb-input-wrapper">
+      <input type="text" class="cb-input" id="cb-input" placeholder="Type your question..." onkeypress="handleKeyPress(event)">
+      <button class="cb-send" id="cb-send" onclick="sendMessage()">
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Configuration - Update this URL to your backend
+  const QUESTAI_API = 'http://localhost:8000';
+
+  // Generate session ID
+  const sessionId = localStorage.getItem('questai_session') ||
+    ('qa_' + Math.random().toString(36).substr(2, 9));
+  localStorage.setItem('questai_session', sessionId);
+
+  function toggleChat() {
+    document.getElementById('campusbot-window').classList.toggle('open');
+  }
+
+  document.getElementById('campusbot-toggle').addEventListener('click', toggleChat);
+
+  function addMessage(content, isUser = false) {
+    const messages = document.getElementById('cb-messages');
+    const msg = document.createElement('div');
+    msg.className = `cb-message ${isUser ? 'user' : 'bot'}`;
+    msg.textContent = content;
+    messages.appendChild(msg);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function showTyping() {
+    const messages = document.getElementById('cb-messages');
+    const typing = document.createElement('div');
+    typing.className = 'cb-typing';
+    typing.id = 'cb-typing';
+    typing.innerHTML = '<span></span><span></span><span></span>';
+    messages.appendChild(typing);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function hideTyping() {
+    const typing = document.getElementById('cb-typing');
+    if (typing) typing.remove();
+  }
+
+  function updateQuickReplies(replies) {
+    const container = document.getElementById('cb-quick');
+    container.innerHTML = '';
+    if (replies && replies.length) {
+      replies.forEach(r => {
+        const btn = document.createElement('button');
+        btn.className = 'cb-quick-btn';
+        btn.textContent = r.label;
+        btn.onclick = () => sendQuick(r.value);
+        container.appendChild(btn);
+      });
+    }
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('cb-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    input.value = '';
+    addMessage(text, true);
+    showTyping();
+
+    try {
+      const lang = document.getElementById('cb-language').value;
+      const res = await fetch(`${QUESTAI_API}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: text,
+          session_id: sessionId,
+          language: lang
+        })
+      });
+
+      const data = await res.json();
+      hideTyping();
+      addMessage(data.reply || "Sorry, I couldn't process that.");
+
+      if (data.quick_replies) {
+        updateQuickReplies(data.quick_replies);
+      }
+    } catch (err) {
+      hideTyping();
+      addMessage("Connection error. Please try again.");
+    }
+  }
+
+  function sendQuick(text) {
+    document.getElementById('cb-input').value = text;
+    sendMessage();
+  }
+
+  function handleKeyPress(e) {
+    if (e.key === 'Enter') sendMessage();
+  }
+</script>
+
+</body>
+</html>
