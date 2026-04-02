@@ -6,7 +6,7 @@ import {
   FileType, AlertCircle, LogOut
 } from 'lucide-react';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const getSessionId = () => {
   let sessionId = localStorage.getItem('campus_session_id');
